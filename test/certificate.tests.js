@@ -1,0 +1,75 @@
+import chai from 'chai'
+import chaiThings from 'chai-things'
+
+chai.should()
+chai.use(chaiThings)
+
+import { MCPCertificate } from '../src/certificate.js'
+
+const pemChain = `-----BEGIN CERTIFICATE-----
+MIIC9DCCAnmgAwIBAgIGAX4MVvjkMAoGCCqGSM49BAMDMC4xLDAqBgoJkiaJk/Is
+ZAEBDBx1cm46bXJuOm1jcDppZDphYm9hbWFyZTp0ZXN0MB4XDTIxMTIzMDE3MTUz
+M1oXDTIzMTIzMTE3MTUzM1owPjE8MDoGCgmSJomT8ixkAQEMLHVybjptcm46bWNw
+OmlkOmFib2FtYXJlOnRlc3Q6YWJvYW1hcmUtc3Bpcml0MHYwEAYHKoZIzj0CAQYF
+K4EEACIDYgAENR1g4V6Q2OOGT5nzgys6iVF8ijcmm7XW4r7zicwSfXaaA7PDekOO
+EVjeoq6SGJ5lredpwLEmJgOuAJ7drXQblBCBXzMiX+n3sHH7P/9QeP4u4+y87nGC
+l5EGcDhIqMoPo4IBVDCCAVAwcgYDVR0RBGswaaAgBhRpgrmI8MCbr/jHy6m9wICq
+rteKG6AIDAZBQkNERUagIwYUaYPuloSAm6/4x8uLqcCAqq7XihugCwwJMjMwOTk5
+OTk5oCAGFGmDreLv99u5krbJoo3fjpC7/+5LoAgMBkZJIFRLVTAdBgNVHQ4EFgQU
+p8VMbYqWwowvusyGGw1xswy55IQwHwYDVR0jBBgwFoAUoRxLRep7qHEbNfgCJzwZ
+oavKEMowCwYDVR0PBAQDAgCAMBkGA1UdJQQSMBAGBFUdJQAGCCsGAQUFBwMCMDIG
+A1UdHwQrMCkwJ6AloCOGIWh0dHBzOi8vbWlyLmFib2FtYXJlLm5ldC90ZXN0L2Ny
+bDA+BggrBgEFBQcBAQQyMDAwLgYIKwYBBQUHMAGGImh0dHBzOi8vbWlyLmFib2Ft
+YXJlLm5ldC90ZXN0L29jc3AwCgYIKoZIzj0EAwMDaQAwZgIxAK6F/LbToC4maeh6
+bTlATOSS3HD64ql6SwZ1MftTwAU15P5wzzPvH16FHXOcJ20w1gIxAMWhsarEdB5j
+Wy3wfoheQzJpEYiJiB5h+26NkkAZcCFWNhIL7RFM0GNiV6kkDq97Hw==
+-----END CERTIFICATE-----
+-----BEGIN CERTIFICATE-----
+MIICozCCAimgAwIBAgIGAX4MUfkUMAoGCCqGSM49BAMDMCkxJzAlBgoJkiaJk/Is
+ZAEBDBd1cm46bXJuOm1jcDppZDphYm9hbWFyZTAeFw0yMTEyMzAxNzEwMDVaFw0y
+MzEyMzExNzEwMDVaMC4xLDAqBgoJkiaJk/IsZAEBDBx1cm46bXJuOm1jcDppZDph
+Ym9hbWFyZTp0ZXN0MHYwEAYHKoZIzj0CAQYFK4EEACIDYgAEuKYyaPehHynwBO5Z
+UY0ws44nUEThg0InymMj3LpF1ERyhFctCvq+TTeSM6QQNDJHKofNwHe4L8Hx9a2g
+ud5DeAT6QpioKzv9tHeiyopcuJSd0vDoUuy0RvVl1E6ckT3Mo4IBGTCCARUwKQYD
+VR0RBCIwIKARBgNVBAqgCgwIYWJvYW1hcmWgCwYDVQQGoAQMAkZJMB0GA1UdDgQW
+BBShHEtF6nuocRs1+AInPBmhq8oQyjAfBgNVHSMEGDAWgBRhyN5jwtaqT8bGzRqz
+TLyq1e/jFjALBgNVHQ8EBAMCAIQwEwYDVR0lBAwwCgYIKwYBBQUHAwIwEgYDVR0T
+AQH/BAgwBgEB/wIBBDAyBgNVHR8EKzApMCegJaAjhiFodHRwczovL21pci5hYm9h
+bWFyZS5uZXQvdGVzdC9jcmwwPgYIKwYBBQUHAQEEMjAwMC4GCCsGAQUFBzABhiJo
+dHRwczovL21pci5hYm9hbWFyZS5uZXQvdGVzdC9vY3NwMAoGCCqGSM49BAMDA2gA
+MGUCMQDSXdSM1uUBm2teC3Tn+SHMgLegFXd/19D3z+Naf6eHAEk9SwesrUPtHgIs
+oc45yjsCMFcJEQF/26Oi7Pr/Vur7N6FwGoywz8jakCb20kF5bYpcL5QydnnwXWTc
+KvVpH7Kvrg==
+-----END CERTIFICATE-----
+-----BEGIN CERTIFICATE-----
+MIICvjCCAkSgAwIBAgIGAX4MTa/LMAoGCCqGSM49BAMDMEExPzAPBgNVBAoMCGFi
+b2FtYXJlMAkGA1UEBgwCRkkwIQYJKoZIhvcNAQkBDBRtaXJAbWlyLmFib2FtYXJl
+Lm5ldDAeFw0yMTEyMzAxNzA1MjRaFw0yNjEyMzAxNzA1MjRaMCkxJzAlBgoJkiaJ
+k/IsZAEBDBd1cm46bXJuOm1jcDppZDphYm9hbWFyZTB2MBAGByqGSM49AgEGBSuB
+BAAiA2IABGu9PktfZN36wGw5E/vgWr91jU2+oOLwkz1VtP69O2b2u36qpI7tdfQT
+mlHJgpir2gUU1jyfRmwlmipyWtxzkKcs71ZUuwFDPqjb3UQEv8Yw5IuodDfaggBg
+OP3BL76fi6OCASEwggEdMCkGA1UdEQQiMCCgEQYDVQQKoAoMCGFib2FtYXJloAsG
+A1UEBqAEDAJGSTAdBgNVHQ4EFgQUYcjeY8LWqk/Gxs0as0y8qtXv4xYwHwYDVR0j
+BBgwFoAUTa57hGAdTipkTNxPmO0XW+OkP7owCwYDVR0PBAQDAgCEMBMGA1UdJQQM
+MAoGCCsGAQUFBwMCMBIGA1UdEwEB/wQIMAYBAf8CAQQwNgYDVR0fBC8wLTAroCmg
+J4YlaHR0cHM6Ly9taXIuYWJvYW1hcmUubmV0L2Fib2FtYXJlL2NybDBCBggrBgEF
+BQcBAQQ2MDQwMgYIKwYBBQUHMAGGJmh0dHBzOi8vbWlyLmFib2FtYXJlLm5ldC9h
+Ym9hbWFyZS9vY3NwMAoGCCqGSM49BAMDA2gAMGUCMD0UUCSsPU3T0vf9/KyqfPbn
+pOQ8lD3qit9fM8CvuSh874bFJkYhwH4nyWwrbBu0JQIxAOTrLsPbusfcEM0slN9H
+GVBRtINa80Lkyge/u+7nosq5tkzKHb9BnccBKl45jZzsAw==
+-----END CERTIFICATE-----`
+
+describe('Certificates', function () {
+  it('import chain from PEM', function () {
+    const chain = MCPCertificate.fromPEM(pemChain, true)
+    chain.should.be.an('array')
+    chain.should.have.lengthOf(3)
+    chain.should.all.be.instanceOf(MCPCertificate)
+
+    const cert = chain[0]
+    cert.should.have.property('uid')
+    cert.uid.should.equal('urn:mrn:mcp:id:aboamare:test:aboamare-spirit')
+    cert.should.have.property('ipid')
+    cert.ipid.should.equal('urn:mrn:mcp:id:aboamare:test')
+  })
+})

@@ -1,0 +1,31 @@
+{
+  "name": "mirau",
+  "version": "0.1.0",
+  "description": "Library and utilities to validate authentication by a MCP Maritime Identity Registry",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "mocha"
+  },
+  "keywords": [
+    "mcp",
+    "mir",
+    "authentication",
+    "validation"
+  ],
+  "author": "Robert Aarts, Aboa Mare Maritime Academy and Training Center",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "asn1js": "^2.2.0",
+    "chai-as-promised": "^7.1.1",
+    "dayjs": "^1.10.7",
+    "jose": "^4.3.7",
+    "node-fetch": "^3.1.0",
+    "pkijs": "^2.2.1"
+  },
+  "devDependencies": {
+    "chai": "^4.3.4",
+    "chai-things": "^0.2.0",
+    "mocha": "^9.1.3"
+  }
+}
