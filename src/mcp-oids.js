@@ -9,6 +9,14 @@ const OID = {
   unit:         '2.5.4.11',                 // OU
   UID:          '0.9.2342.19200300.100.1.1',
 
+
+  /*
+   * (OCSP) algorithms and extensions
+   */
+  sha1:         '1.3.14.3.2.26',
+  sha256:       '2.16.840.1.101.3.4.2.1',
+  nonce:        '1.3.6.1.5.5.7.48.1.2',
+
   /*
    * Extended Key Usage OIDs
    */

@@ -19,6 +19,7 @@ const Codes = {
     NotACertificate: cert => `This is not a certificate: ${cert}`,
     NotIssued: (cert, issuerCert) => `Certificate for ${cert.uid} was not issued by certrficate for ${issuerCert.uid} with fingerprint: ${issuerCert.fingerprint}`,
     NotYetValid: cert => `Certificate is valid only from ${cert.validFrom}`,
+    OCSPError: (ocspReq) => `Received invalid OCSP response from ${ocspReq.url}`, 
     Revoked: cert => `Certificate for ${cert.uid} has been revoked: ${cert.fingerprint}`,
     SubjectIssuerMismatch: (sub, iss) => `Subject ${sub} cannot have been issued by ${iss}`,
     UidNotMrn: uid => `Certificate UID is not a MRN: ${uid}`,

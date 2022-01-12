@@ -5,11 +5,16 @@ export class Cache extends Map {
     super()
     this._options = Object.assign({}, Cache.defaults, options)
     if (typeof this._options.expireIn === 'string') {
-      // convert to args for dayjs.add function
-      const args = this._options.expireIn.split(/\s/)
-      args[0] = parseInt(args[0])
-      this._options.expireIn = args
+      this._options.expireIn = this.expireIn(this._options.expireIn)
     }
+  }
+
+  expireIn (periodString = '30 minutes') {
+    const args = periodString.split(/\s/)
+    args[0] = parseInt(args[0])
+    return function () {
+      dayjs().add(...args).toDate() 
+    }      
   }
 
   get maxEntries () {
@@ -31,7 +36,7 @@ export class Cache extends Map {
 
   set (key, value, expires) {
     const entry = { value }
-    entry.expires = (expires || value.expires || dayjs().add(...this._options.expireIn).toDate()).valueOf()
+    entry.expires = (expires || value.expires || this._options.expireIn()).valueOf()
     super.set(key, entry)
     if (this.size > this.maxEntries) {
       this.purge()
@@ -67,3 +72,5 @@ export class Cache extends Map {
     expireIn: '48 hours'
   }
 }
+
+export default { Cache }
