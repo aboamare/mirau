@@ -171,6 +171,7 @@ export async function getStatus(spid, certificate) {
     }
   } catch (err) {
     console.debug(err)
+    return undefined // undefined means "unknown"
   }
 
 }

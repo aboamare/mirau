@@ -13,7 +13,7 @@ export class Cache extends Map {
     const args = periodString.split(/\s/)
     args[0] = parseInt(args[0])
     return function () {
-      dayjs().add(...args).toDate() 
+      return dayjs().add(...args).toDate() 
     }      
   }
 

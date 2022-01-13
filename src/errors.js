@@ -23,7 +23,8 @@ const Codes = {
     Revoked: cert => `Certificate for ${cert.uid} has been revoked: ${cert.fingerprint}`,
     SubjectIssuerMismatch: (sub, iss) => `Subject ${sub} cannot have been issued by ${iss}`,
     UidNotMrn: uid => `Certificate UID is not a MRN: ${uid}`,
-    UidMismatch: (uidCert, uid) => `Certificate UID ${certUid} does not match: ${uid}`
+    UidMismatch: (uidCert, uid) => `Certificate UID ${certUid} does not match: ${uid}`,
+    UnknownStatus: cert => `Status of certificate for ${cert.uid} (${cert.fingerprint}) could not be established`
   },
   EntityError: {
   }

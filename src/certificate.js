@@ -68,17 +68,27 @@ export class MCPCertificate extends X509Certificate {
     this.serial = pkiCert.serialNumber
   }
 
-  cacheAs(kind = 'certificate') {
+  get _cache () {
+    return this.constructor._cache
+  }
+
+  get validationOptions () {
+    return this.constructor.validationOptions
+  }
+
+  cacheAs (status = 'good', kind) {
     if (! this._cache) {
       return
     }
+    if (kind === undefined && status === 'trusted') {
+      kind = 'trusted'
+    }
+    if (kind === undefined && this.ca) {
+      kind = 'mir'
+    }
     const expireIn = this.validationOptions.cache.expireIn[kind]
     const expires = typeof expireIn === 'function' ? expireIn() : undefined
-    this._cache.set(this.fingerprint, this.status, expires)
-  }
-
-  cache () {
-    this.cacheAs('certificate')
+    this._cache.set(this.fingerprint, status, expires)
   }
 
   async getStatus (options) {
@@ -93,8 +103,15 @@ export class MCPCertificate extends X509Certificate {
 
     // try to get OCSP result
     result = await OCSP.getStatus(options.spid, this)
+    if (result) {
+      return result
+    }
 
     // if in list of trusted certs mark as trusted and cache
+    if (options.trusted.has(this.fingerprint)) {
+      this.cacheAs('trusted')
+      return 'trusted'
+    }
 
     // if applicable get attestations
 
@@ -120,11 +137,13 @@ export class MCPCertificate extends X509Certificate {
     }
 
     const status = await this.getStatus(options)
-    if (status.trusted) {
-      return
-    }
-    if (status.revoked) {
+    if (status && status.revoked) {
       throw CertificateError.Revoked(this)
+    }
+    if (status === 'trusted') {
+      return
+    } else if (options.unknown === false || !issuerCert) {
+      throw CertificateError.UnknownStatus(this)
     }
 
     if (issuerCert && !issuerCert.ca) {
@@ -155,19 +174,20 @@ export class MCPCertificate extends X509Certificate {
 
   static _initCache() {
     const cacheOptions = this.validationOptions.cache
-    const clsName = this.cacheOptions.type || 'Cache'
+    const clsName = cacheOptions.type || 'Cache'
     this._cache = new cache[clsName]()
     if (!cacheOptions.expireIn) {
-      cacheOptions.expireIn = {}
+      const expireIn = {}
       for (const kind in cacheOptions) {
         if (kind === 'type') {
           continue
         } else if (typeof cacheOptions[kind] === 'string') {
-          cacheOptions.expireIn[kind] = this._cache.expireIn(cacheOptions[kind])
+          expireIn[kind] = this._cache.expireIn(cacheOptions[kind])
         } else if (typeof cacheOptions[kind] === 'function') {
-          cacheOptions.expireIn[kind] = cacheOptions[kind]
+          expireIn[kind] = cacheOptions[kind]
         }
       }
+      cacheOptions.expireIn = expireIn
     }
   }
 
@@ -180,12 +200,24 @@ export class MCPCertificate extends X509Certificate {
   }
 
   static validationOptions = {
-    trusted: [],
+    trusted: new Set([]),
     ogtUrl: '',
     cache: {
       certificate: '12 hours',
       mir: '48 hours',
       trusted: '48 hours'
+    }
+  }
+
+  static trust (certificate) {
+    this.validationOptions.trusted.add(certificate.fingerprint)
+  }
+
+  static noLongerTrust (certificate) {
+    try {
+      this.validationOptions.trusted.delete(certificate.fingerprint)
+    } catch (err) {
+      console.info(err)
     }
   }
 

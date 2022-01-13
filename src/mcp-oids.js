@@ -40,7 +40,7 @@ const OID = {
    * Authority Information Access Methods
    */
   ocsp: '1.3.6.1.5.5.7.48.1', // id-ad-ocsp
-
+  x5u:  '2.25.225758541249626787560521749862278982872', // MCP defined url to get certificate chain, like x5u in JSON Web Signatures.
   /*
    * MCP defined OIDs
    */
