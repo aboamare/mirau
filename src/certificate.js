@@ -35,6 +35,25 @@ export class MRN extends String {
   }
 }
 
+function _parseOID (str) {
+  function as7Bits (int) {
+    const padding = '00000000'
+    const bits = int.toString(2)
+    return padding.slice(0, 7 - bits.length) + bits
+  }
+  const match = str.match(/^2\.25\.\{([0-9A-F]+)\}/i)
+  if (match) {
+    const hexStr = match[1]
+    let bits = ''
+    for (let i = 0; i < hexStr.length; i = i + 2) {
+      bits += as7Bits(parseInt(hexStr.slice(i, i + 2), 16))
+    }
+    const big = BigInt(`0b${bits}`)
+    return `2.25.${big.toString()}`
+  }
+  return str
+}
+
 export class MCPCertificate extends X509Certificate {
   constructor (pem) {
     super(pem)
@@ -56,13 +75,29 @@ export class MCPCertificate extends X509Certificate {
     const ipidBlock = pkiCert.issuer.typesAndValues.find(attrTypeAndValue => attrTypeAndValue.type === OID.UID)
     this.ipid = ipidBlock ? ipidBlock.value.valueBlock.value : undefined
 
+    const extnSubjectAltName = (pkiCert.extensions || []).find(extn => extn.extnID === OID.subjectAltName)
+    if (extnSubjectAltName && extnSubjectAltName.parsedValue) {
+      const altNames = extnSubjectAltName.parsedValue.altNames || []
+      altNames.forEach(altName => {
+        const oid = _parseOID(altName.value.valueBlock.value[0].valueBlock.toString())
+        const prop = OID[oid]
+        if (prop) {
+          this[prop] = altName.value[''].valueBlock.value
+        }
+      })
+    }
+
     const extnAuthKey = (pkiCert.extensions || []).find(extn => extn.extnID === OID.authorityKeyIdentifier)
     this.authorityKeyIdentifier = extnAuthKey.parsedValue.keyIdentifier
 
-    const extnAuthAccess = (pkiCert.extensions || []).find(extn => extn.extnID === OID.authorityInfoAccess)
-    if (extnAuthAccess) {
-      const ocsp = extnAuthAccess.parsedValue.accessDescriptions.find(des => des.accessMethod === OID.ocsp)
-      this.ocspUrl = ocsp ? ocsp.accessLocation.value : undefined
+    const extnAuthInfoAccess = (pkiCert.extensions || []).find(extn => extn.extnID === OID.authorityInfoAccess)
+    if (extnAuthInfoAccess) {
+      extnAuthInfoAccess.parsedValue.accessDescriptions.forEach(des => {
+        const accessMethod = OID[_parseOID(des.accessMethod)]
+        if (accessMethod) {
+          this[`${accessMethod}Url`] = des.accessLocation.value
+        }
+      })
     }
 
     this.serial = pkiCert.serialNumber

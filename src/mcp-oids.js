@@ -31,18 +31,26 @@ const OID = {
   /*
    * Other standard extensions
    */
+  subjectAltName:         '2.5.29.17',          // id-ce 17
   authorityKeyIdentifier: '2.5.29.35',          // id-ce 35
   subjectKeyIdentifier:   '2.5.29.14',          // id-ce 14
   crlDistributionPoints:  '2.5.29.31',          // id-ce 31
   authorityInfoAccess:    '1.3.6.1.5.5.7.1.1',  // id-pe 1
-
+  subjectInfoAccess:      '1.3.6.1.5.5.7.1.11', // id-pe 11
+  
   /*
    * Authority Information Access Methods
    */
   ocsp: '1.3.6.1.5.5.7.48.1', // id-ad-ocsp
   x5u:  '2.25.225758541249626787560521749862278982872', // MCP defined url to get certificate chain, like x5u in JSON Web Signatures.
+
   /*
-   * MCP defined OIDs
+   * Subject Information Access Methods
+   */
+  matp:         '2.25.110111187235111034673021170401583226313', // MCP defined URL to get list of attestors or an attestation
+
+  /*
+   * MCP defined OIDs for the Subject Alternative Names
    */
   flagState:    '2.25.323100633285601570573910217875371967771',
   callSign:     '2.25.208070283325144527098121348946972755227',
