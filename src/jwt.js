@@ -1,14 +1,16 @@
 import fetch from 'node-fetch'
 import * as jose from 'jose'
-import { MCPCertificate, MRN } from './certificate.js'
+import pki from 'pkijs'
+
+import { MCPCertificate } from './certificate.js'
 import Errors from './errors.js'
 
 const { JwtError } = Errors
 
 export class JWT extends Object {
-  constructor (token) {
+  constructor (props) {
     super()
-    Object.assign(this, token)
+    Object.assign(this, props)
   }
 
   static VerificationOptions = {
@@ -37,7 +39,7 @@ export class JWT extends Object {
         const response = await fetch(url.toString())
         if (response.ok) {
           const pem = await response.text()
-          chain.push(...MCPCertificate.fromPEM(pem, true))
+          chain.push(... await MCPCertificate.fromPEM(pem, true))
         } else {
           throw JwtError.InvalidX5U(unverifiedProtectedHeader.x5u)
         }
@@ -55,9 +57,8 @@ export class JWT extends Object {
       let publicKey
       try {
         if (chain.length) {
-          publicKey = chain[0].publicKey
-          const jwk = publicKey.export({format: 'jwk'})
-          jwk.alg = publicKey.asymmetricKeyDetails.namedCurve || publicKey.asymmetricKeyDetails.hashAlgorithm
+          const jwk = chain[0].jwk
+          jwk.alg = jwk.alg || jwk.crv || pki.getEngine().getHashAlgorithm(chain[0].signatureAlgorithm)
           publicKey = await jose.importJWK(jwk)
         }
         //TODO: other means for getting the public key used to sign the token?
@@ -68,15 +69,7 @@ export class JWT extends Object {
       const verificationOptions = Object.assign(this.VerificationOptions, expectations, options)
       const { payload, protectedHeader } = await jose.jwtVerify(token, publicKey, verificationOptions)
   
-      const tokenSubject = payload.sub
-      if (!tokenSubject) {
-        throw JwtError.NoSubject(payload)
-      }
-      if (!MRN.test(tokenSubject)) {
-        throw JwtError.SubjectNotMrn(tokenSubject)
-      }
-      
-      return new JWT(Object.assign({ chain }, payload, protectedHeader))
+      return new JWT(Object.assign({ chain, raw: token }, payload, protectedHeader))
     } catch (err) {
       if (err instanceof JwtError) {
         throw err

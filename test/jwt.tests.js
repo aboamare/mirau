@@ -1,14 +1,8 @@
-let subtle
-try {
-  const crypto = await import('crypto')
-  subtle = crypto.webcrypto.subtle
-} catch (err) {
-  console.log('crypto support is disabled!')
-}
-
 import chai from 'chai'
 import chaiAsPromised from 'chai-as-promised'
 import * as jose from 'jose'
+import { getEngine } from 'pkijs'
+import { initCrypto } from '../src/certificate.js'
 import Errors from '../src/errors.js'
 import { JWT } from '../src/jwt.js'
 
@@ -45,6 +39,7 @@ async function createToken (claims, subject, protect = {}) {
 
 async function createKey (namedCurve = 'P-384') {
   try {
+    const subtle = getEngine().subtle
     const keyPair = await subtle.generateKey(
       {
         name: "ECDSA",
@@ -63,6 +58,10 @@ async function createKey (namedCurve = 'P-384') {
 }
 
 describe('JWT Validation', function () {
+  before(async () => {
+    await initCrypto()
+  })
+
   it('Valid plain MCP authentication token (signed by subject)', async function () {
     const token = await createToken({sub: testSubject.sub}, testSubject)
     const validated = await JWT.validate(token)

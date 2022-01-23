@@ -1,39 +1,14 @@
-import { X509Certificate } from 'crypto'
-import { Certificate }  from 'pkijs' 
+import pki  from 'pkijs' 
 import asn1 from 'asn1js'
+import base64 from 'base64-js'
 
 import cache from './cache.js'
+import { MRN } from  './mrn.js'
 import { OID }  from './mcp-oids.js'
 import OCSP from './ocsp.js'
 import Errors from './errors.js'
 
 const { CertificateError } = Errors
-
-export class MRN extends String {
-  constructor (value) {
-    if (!MRN.test(value)) {
-      throw TypeError(`${value} is not a valid MCP MIR MRN`)
-    }
-    super(value)
-  }
-
-  get issuer() {
-    return new MRN(this.split(':').slice(0, -1).join(':'))
-  }
-  /**
-   * Check if this MRN is in the subspace of an entity that would have the given value as its own MRN.
-   * 
-   * @param {*} value 
-   */
-  issuedBy (value) {
-    return this.issuer == value.toString()
-  }
-  static reMrn = /^urn:mrn:mcp:id(:[_-a-z0-9.]+)+/i
-
-  static test (value) {
-    return this.reMrn.test(value)
-  }
-}
 
 function _parseOID (str) {
   function as7Bits (int) {
@@ -54,28 +29,40 @@ function _parseOID (str) {
   return str
 }
 
-export class MCPCertificate extends X509Certificate {
-  constructor (pem) {
-    super(pem)
-    
-    // Parse as ASN1 based X509 to get important properties
+export async function initCrypto() {
+  const engine = pki.getEngine()
+  if (!engine.subtle) {
+    try {
+      const nodeCrypto = await import('crypto')
+      pki.setEngine('node', nodeCrypto.webcrypto, nodeCrypto.webcrypto.subtle)
+    } catch (err) {
+      throw Error('Crypto engine support is not available')
+    }
+  }
+}
+
+export class MCPCertificate extends pki.Certificate {
+  constructor (pem) {    
     let b64 = pem.replace(/^\s?-----BEGIN CERTIFICATE-----/, '')
     b64 = b64.replace(/-----END CERTIFICATE-----/, '')
     b64 = b64.replace(/\s+/g, '')
-    const buf = Buffer.from(b64, 'base64')
-    const asn = asn1.fromBER(buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength))
-    const pkiCert = new Certificate({schema: asn.result})
+    const asn = asn1.fromBER(base64.toByteArray(b64).buffer)
+    super({schema: asn.result})
   
-    const uidBlock = pkiCert.subject.typesAndValues.find(attrTypeAndValue => attrTypeAndValue.type === OID.UID)
-    this.uid = uidBlock ? uidBlock.value.valueBlock.value : undefined
+    this.dn = this.subject.typesAndValues.reduce((dnObj, attrTypeAndValue) => {
+      const field = OID[attrTypeAndValue.type] || attrTypeAndValue.type
+      dnObj[field] = attrTypeAndValue.value.valueBlock.value
+      return dnObj
+    }, {})
+    this.uid = this.dn.uid
     if (!this.uid || MRN.test(this.uid) !== true) {
-      throw CertificateError.SubjectNotMrn(this.subject)
+      throw CertificateError.SubjectNotMrn(this.dnString)
     }
 
-    const ipidBlock = pkiCert.issuer.typesAndValues.find(attrTypeAndValue => attrTypeAndValue.type === OID.UID)
+    const ipidBlock = this.issuer.typesAndValues.find(attrTypeAndValue => attrTypeAndValue.type === OID.uid)
     this.ipid = ipidBlock ? ipidBlock.value.valueBlock.value : undefined
 
-    const extnSubjectAltName = (pkiCert.extensions || []).find(extn => extn.extnID === OID.subjectAltName)
+    const extnSubjectAltName = (this.extensions || []).find(extn => extn.extnID === OID.subjectAltName)
     if (extnSubjectAltName && extnSubjectAltName.parsedValue) {
       const altNames = extnSubjectAltName.parsedValue.altNames || []
       altNames.forEach(altName => {
@@ -87,10 +74,16 @@ export class MCPCertificate extends X509Certificate {
       })
     }
 
-    const extnAuthKey = (pkiCert.extensions || []).find(extn => extn.extnID === OID.authorityKeyIdentifier)
+    const extnAuthKey = (this.extensions || []).find(extn => extn.extnID === OID.authorityKeyIdentifier)
     this.authorityKeyIdentifier = extnAuthKey.parsedValue.keyIdentifier
 
-    const extnAuthInfoAccess = (pkiCert.extensions || []).find(extn => extn.extnID === OID.authorityInfoAccess)
+    const extnBasicConstraints = (this.extensions || []).find(extn => extn.extnID === OID.basicConstraints)
+    if (extnBasicConstraints) {
+      this.ca = extnBasicConstraints.parsedValue.cA
+      this.pathLenConstraint = extnBasicConstraints.parsedValue.pathLenConstraint
+    }
+
+    const extnAuthInfoAccess = (this.extensions || []).find(extn => extn.extnID === OID.authorityInfoAccess)
     if (extnAuthInfoAccess) {
       extnAuthInfoAccess.parsedValue.accessDescriptions.forEach(des => {
         const accessMethod = OID[_parseOID(des.accessMethod)]
@@ -99,12 +92,26 @@ export class MCPCertificate extends X509Certificate {
         }
       })
     }
-
-    this.serial = pkiCert.serialNumber
   }
 
   get _cache () {
     return this.constructor._cache
+  }
+
+  get dnString () {
+    Object.entries(this.dn).map(entry => `${entry[0]}=${entry[1]}`).join(',')
+  }
+
+  get serial () {
+    return this.serialNumber
+  }
+
+  get validFrom () {
+    return this.notBefore.value
+  }
+
+  get validTo () {
+    return this.notAfter.value
   }
 
   get validationOptions () {
@@ -124,6 +131,22 @@ export class MCPCertificate extends X509Certificate {
     const expireIn = this.validationOptions.cache.expireIn[kind]
     const expires = typeof expireIn === 'function' ? expireIn() : undefined
     this._cache.set(this.fingerprint, status, expires)
+  }
+
+  get jwk () {
+    return this.subjectPublicKeyInfo.toJSON()
+  }
+
+  async updateFingerprint (hashAlgorithm = 'SHA-1') {
+    const subtle = pki.getEngine().subtle
+    try {
+      const bytes = await subtle.digest(hashAlgorithm, this.toSchema(true).toBER())
+      this.fingerprint = [...new Uint8Array(bytes)].map(byte => byte.toString(16).padStart(2, '0').toUpperCase()).join(':')
+    } catch (err) {
+      console.error(err)
+      throw err
+    }
+    return this.fingerprint
   }
 
   async getStatus (options) {
@@ -153,16 +176,21 @@ export class MCPCertificate extends X509Certificate {
     return result
   }
 
+  async checkIssued(issuerCert) {
+    // check that this cert was issued and signed by the given issuer
+    return await this.verify(issuerCert)
+  }
+
   async validate (uid, issuerCert, options) {
     if (uid && this.uid !== uid) {
       throw CertificateError.UidMismatch(this.uid, uid)
     }
 
     const now = new Date()
-    if (this.validTo < now) {
+    if (now > this.validTo) {
       throw CertificateError.Expired(this)
     }
-    if (this.validFrom > now) {
+    if (now < this.validFrom) {
       throw CertificateError.NotYetValid(this)
     }
 
@@ -194,16 +222,19 @@ export class MCPCertificate extends X509Certificate {
     }
   }
 
-  static fromPEM (pem, asArray = false) {
+  static async fromPEM (pem, asArray = false) {
     const certificates = []
     const chunks = pem.match(/-----BEGIN CERTIFICATE-----\s([\n\ra-zA-Z0-9/+=]+)-----END CERTIFICATE-----/g)
-    chunks.forEach(chunk => {
+    chunks.forEach(async chunk => {
       try {
-        certificates.push(new MCPCertificate(chunk))
+        const cert = new MCPCertificate(chunk)
+        certificates.push(cert)
       } catch (err) {
         console.warn(err)
       }
     })
+    const promise = Promise.all(certificates.map(cert => cert.updateFingerprint()))
+    await promise
     return certificates.length === 1 && asArray === false ? certificates[0] : certificates
   }
 
@@ -226,12 +257,14 @@ export class MCPCertificate extends X509Certificate {
     }
   }
 
-  static initialize (options = {spid: 'urn:mrn:mcp:id:aboamare:test:sp'}) {
+  static async initialize (options = {spid: 'urn:mrn:mcp:id:aboamare:test:sp'}) {
     Object.assign(this.validationOptions, options)
 
     if (this.validationOptions.cache) {
       this._initCache()
     }
+
+    await initCrypto()
   }
 
   static validationOptions = {

@@ -9,7 +9,7 @@ import Errors from './errors.js'
 
 const { CertificateError } = Errors
 
-function nameHash (dn = {UID: 'urn:mrn:mcp:id:aboamare:test'}) {
+function nameHash (dn = {uid: 'urn:mrn:mcp:id:aboamare:test'}) {
 
   const rdn = new pki.RelativeDistinguishedNames()
   rdn.typesAndValues.push(...Object.keys(dn).map(attr => {
@@ -36,7 +36,7 @@ function request (spid, pkiCert) {
 		value: new pki.RelativeDistinguishedNames({
 			typesAndValues: [
 				new pki.AttributeTypeAndValue({
-					type: OID.UID,
+					type: OID.uid,
 					value: new asn1.PrintableString({ value: spid })
 				})
 			]
@@ -48,7 +48,7 @@ function request (spid, pkiCert) {
 			hashAlgorithm: new pki.AlgorithmIdentifier({
 				algorithmId: OID.sha1
 			}),
-			issuerNameHash: new asn1.OctetString({ valueHex: nameHash({ UID: pkiCert.ipid }) }),
+			issuerNameHash: new asn1.OctetString({ valueHex: nameHash({ uid: pkiCert.ipid }) }),
 			issuerKeyHash: new asn1.OctetString({ valueHex: pkiCert.authorityKeyIdentifier.valueBlock.valueHex }),
 			serialNumber: new asn1.Integer({ valueHex: pkiCert.serial.valueBlock.valueHex })
 		})
