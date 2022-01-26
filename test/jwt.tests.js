@@ -21,7 +21,7 @@ const testSubject = {
     crv: "P-384",
     d: "QjCXRNIa5Xru3zSnKcXyzmGuLo34kEXBKcJRxSa2VssNy470FlM64JWiP0Hm-srk"
   },
-  x5u: 'https://raw.githubusercontent.com/aboamare/mirau/main/test/data/sample.x5u'
+  x5u: 'https://raw.githubusercontent.com/aboamare/mirau/main/test/data/aboamare-spirit.x5u'
 }
 
 async function createToken (claims, subject, protect = {}) {

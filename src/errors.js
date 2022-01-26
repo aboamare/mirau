@@ -7,7 +7,8 @@ const Codes = {
     NoCertificate: token => `Token does not have or refer to an MCP Certificate: ${token.slice(0,20)}...`,
     InvalidPublicKey: token => `Token refers to, or contains, a public key that cannot be read: ${token.slice(0,20)}...`,
     WrongKey: token => `Token was not signed with provided public key: ${token.slice(0,20)}...`,
-    SubjectNotMrn: sub => `Token 'sub' is not a MRN: ${sub}`
+    SubjectNotMrn: sub => `Token 'sub' is not a MRN: ${sub}`,
+    UnmetExpectation: exp => `Token ${exp} does not have expected value`
   },
   CertificateError: {
     InvalidCertificate: cert => `Certificate could not be validated: ${cert.fingerprint}`,
@@ -18,6 +19,7 @@ const Codes = {
     NoCertificate: chain => `Certificate chain has no certificate: ${chain}`,
     NotACertificate: cert => `This is not a certificate: ${cert}`,
     NotIssued: (cert, issuerCert) => `Certificate for ${cert.uid} was not issued by certrficate for ${issuerCert.uid} with fingerprint: ${issuerCert.fingerprint}`,
+    NotTrusted: cert => `Certificate for ${cert.uid} is not trusted`,
     NotYetValid: cert => `Certificate is valid only from ${cert.validFrom}`,
     OCSPError: (ocspReq) => `Received invalid OCSP response from ${ocspReq.url}`, 
     Revoked: cert => `Certificate for ${cert.uid} has been revoked: ${cert.fingerprint}`,

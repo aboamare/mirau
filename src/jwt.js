@@ -26,12 +26,6 @@ export class JWT extends Object {
 
   static async validate (token, expectations = {}, options = {}) {
     const unverifiedProtectedHeader = jose.decodeProtectedHeader(token)
-    if (expectations.nonce && unverifiedProtectedHeader.nonce !== expectations.nonce) {
-      throw JwtError.InvalidNonce(token, expectations.nonce)
-    }
-
-    //TODO: check audience, expiration, etc.
-    
     const chain = []
     if (unverifiedProtectedHeader.x5u) {
       try {
@@ -68,6 +62,15 @@ export class JWT extends Object {
 
       const verificationOptions = Object.assign(this.VerificationOptions, expectations, options)
       const { payload, protectedHeader } = await jose.jwtVerify(token, publicKey, verificationOptions)
+  
+      for (const exp in expectations) {
+        if (unverifiedProtectedHeader[exp] !== expectations[exp]) {
+          throw exp === 'nonce' ? JwtError.InvalidNonce(token) : JwtError.UnmetExpectation(exp)
+        }
+      }
+  
+      //TODO: check audience, expiration, etc.
+      
   
       return new JWT(Object.assign({ chain, raw: token }, payload, protectedHeader))
     } catch (err) {

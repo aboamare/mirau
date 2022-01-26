@@ -205,7 +205,7 @@ export class MCPCertificate extends pki.Certificate {
     }
     if (status === 'trusted') {
       return
-    } else if (options.unknown === false || !issuerCert) {
+    } else if (!issuerCert && !(options.allowUnknownMir && this.ca && MRN.test(this.uid))) {
       throw CertificateError.UnknownStatus(this)
     }
 
@@ -217,8 +217,16 @@ export class MCPCertificate extends pki.Certificate {
     }
 
     if (!issuerCert) {
-      // this cert is not trusted but perhaps the holder was attested to be ok by an entity that is already trusted
-      //TODO: do the OGT-2 dance
+      // this cert is not trusted but... 
+      if (options.allowUnknownMir && this.ca && MRN.test(this.uid)) {
+        // we allow unknown MIRs. This is useful when checking attestations, and e.g. in testing
+        return
+      }
+      if (options.trustAttested) {
+        //TODO: do the OGT-2 dance
+      }
+
+      throw CertificateError.NotTrusted(this)
     }
   }
 
@@ -274,7 +282,8 @@ export class MCPCertificate extends pki.Certificate {
       certificate: '12 hours',
       mir: '48 hours',
       trusted: '48 hours'
-    }
+    },
+    trustAttested: true
   }
 
   static trust (certificate) {
@@ -307,8 +316,5 @@ export class MCPCertificate extends pki.Certificate {
 
     const root = chain[chain.length - 1]
     await root.validate(expectedUid, null, validationOptions)
-    if (!validationOptions.trusted.includes(root.fingerprint)) {
-      //TODO: check OGT
-    }
   }
 }
