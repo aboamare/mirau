@@ -1,5 +1,5 @@
 import crypto from 'crypto'
-import fetch from 'node-fetch'
+import fetch from 'isomorphic-unfetch'
 
 import pki from 'pkijs'
 import asn1 from 'asn1js'
@@ -170,7 +170,11 @@ export async function getStatus(spid, certificate) {
       return undefined
     }
   } catch (err) {
-    console.debug(err)
+    if (err.name === 'FetchError') {
+      console.warn(err.message)
+    } else {
+      console.debug(err)
+    }
     return undefined // undefined means "unknown"
   }
 
