@@ -19,6 +19,7 @@
     "asn1js": "^2.2.0",
     "base64-js": "^1.5.1",
     "dayjs": "^1.10.7",
+    "es-main": "^1.0.2",
     "isomorphic-unfetch": "^3.1.0",
     "jose": "^4.4.0",
     "pkijs": "^2.2.2"

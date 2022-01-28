@@ -11,14 +11,14 @@ const { CertificateError } = Errors
 
 const issuer = {
   uid: "urn:mrn:mcp:id:aboamare",
-  privateKey:  {
+  privateKey: {
     "key_ops":["sign"],
     "ext":true,
     "kty":"EC",
-    "x":"pZG7RuaFd48AsKxx7ZymmfFAqfFXONGSBNoM9CZY0tLSlT6lgKO-yxpZbY5gdrxg",
-    "y":"jtF8sCg9p8cvnnXvs2R_dDLjkDQIt9E8q_ltESqJc4FjjDBDXdYM1gjh72eKKRNR",
+    "x":"LHgzyQDnfiIuSeB5Si6ja_ud1KzooeOTuCVWEcLocMP4S-2zFm6O4HJglTAApEOF",
+    "y":"J3w-WwlmO-ugyS4-H40nFPLJUzrjzBDQwJ_9vYJDKTs9OzI9ILUhrS8LeAcAsIn-",
     "crv":"P-384",
-    "d":"peoNK4PHZvvXecFSMpa0WU7sLHEA3z0xn7zxtTwuQD41faPVFkFibI83MWWUHEJ2"
+    "d":"Xi7GhreXjZAwo5kCjeGFbCFHZ5y7vwwZ4TmaToinovoUbVt5Ee640dzX2mAxYTFp"
   },
   x5uUrl: 'https://raw.githubusercontent.com/aboamare/mirau/main/test/data/aboamare.x5u'
 }

@@ -74,9 +74,10 @@ export class JWT extends Object {
   
       return new JWT(Object.assign({ chain, raw: token }, payload, protectedHeader))
     } catch (err) {
-      if (err instanceof JwtError) {
+      if (err.constructor.name === 'JwtError') {
         throw err
       } else {
+        console.error(err)
         throw JwtError.TokenError(token)
       }
     }

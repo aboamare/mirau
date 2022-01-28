@@ -29,12 +29,19 @@ function _parseOID (str) {
   return str
 }
 
+function bufToHex(buffer) { // buffer is an ArrayBuffer
+  return [...new Uint8Array(buffer)]
+      .map(x => x.toString(16).padStart(2, '0'))
+      .join('');
+}
+
 export async function initCrypto() {
   const engine = pki.getEngine()
   if (!engine.subtle) {
     try {
       const nodeCrypto = await import('crypto')
-      pki.setEngine('node', nodeCrypto.webcrypto, nodeCrypto.webcrypto.subtle)
+      const crypto = new pki.CryptoEngine({name: "node", crypto: nodeCrypto.webcrypto, subtle: nodeCrypto.webcrypto.subtle})
+      pki.setEngine("node", nodeCrypto.webcrypto, crypto)
     } catch (err) {
       throw Error('Crypto engine support is not available')
     }
@@ -42,7 +49,11 @@ export async function initCrypto() {
 }
 
 export class MCPCertificate extends pki.Certificate {
-  constructor (pem) {    
+  constructor (pem) {
+    if (!pem) {
+      super()
+      return
+    }
     let b64 = pem.replace(/^\s?-----BEGIN CERTIFICATE-----/, '')
     b64 = b64.replace(/-----END CERTIFICATE-----/, '')
     b64 = b64.replace(/\s+/g, '')
@@ -103,7 +114,7 @@ export class MCPCertificate extends pki.Certificate {
   }
 
   get serial () {
-    return this.serialNumber
+    return bufToHex(this.serialNumber.valueBlock.valueHex)
   }
 
   get validFrom () {
@@ -318,3 +329,5 @@ export class MCPCertificate extends pki.Certificate {
     await root.validate(expectedUid, null, validationOptions)
   }
 }
+
+Object.assign(MCPCertificate, CertificateError.Codes)

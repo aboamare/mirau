@@ -15,11 +15,11 @@ const testSubject = {
   alg: 'ES384',
   sub: "urn:mrn:mcp:id:aboamare:test:aboamare-spirit",
   jwk: {
-    kty: "EC",
-    x: "NR1g4V6Q2OOGT5nzgys6iVF8ijcmm7XW4r7zicwSfXaaA7PDekOOEVjeoq6SGJ5l",
-    y: "redpwLEmJgOuAJ7drXQblBCBXzMiX-n3sHH7P_9QeP4u4-y87nGCl5EGcDhIqMoP",
-    crv: "P-384",
-    d: "QjCXRNIa5Xru3zSnKcXyzmGuLo34kEXBKcJRxSa2VssNy470FlM64JWiP0Hm-srk"
+    "kty": "EC",
+    "x": "r49fluQ3i4leya7QX3xGlu-Az1XkZXpFfq9P9T38MgiVUUZfvD4rGkmrHnDVyfMp",
+    "y": "UCe5O3yQKaTgsO66kLR1XFPYX8XJJ3Qif9SUp70-WONGF7Hp83cLSD35c_mrFOIV",
+    "crv": "P-384",
+    "d": "SazGmWMS76fyTluzCGtvkhhS7ehzD439_zazPsTJOOVOH-orGKkdOm5WSgb7PcTd"
   },
   x5u: 'https://raw.githubusercontent.com/aboamare/mirau/main/test/data/aboamare-spirit.x5u'
 }

@@ -1,3 +1,14 @@
+import esMain from 'es-main'
+
+if (esMain(import.meta)) {
+  // generate a new UUID based OID
+  import('uuid')
+  .then(uuid => {
+    const bigInt = BigInt(`0x${uuid.v4().replaceAll('-', '')}`)
+    console.log(`2.25.${bigInt.toString()}`)  
+  })
+}
+
 const OID = {
   /*
    * standard OIDs needed in MCP certificates
