@@ -3,6 +3,7 @@ import * as jose from 'jose'
 import Errors from './errors.js'
 import { JWT } from './jwt.js'
 import { MCPCertificate } from './certificate.js'
+import { Options } from './options.js'
 
 const { EntityError, CertificateError} = Errors
 
@@ -44,9 +45,10 @@ export class Attestation {
   static RecognizedClaims = ['mirOk', 'mirEndorsed']
 
   static async fromJWT (token, options = {}) {
-    const jwt = await JWT.validate(token)
+    const validationOptions = options instanceof Options ? options : new Options(options)
+    const jwt = await JWT.validate(token, {}, validationOptions)
 
-    await MCPCertificate.validate(jwt.chain, jwt.iss, options)
+    await MCPCertificate.validate(jwt.chain, jwt.iss, validationOptions)
   
     const claims = this.RecognizedClaims.reduce((result, claim) => {
       if (jwt[claim] !== undefined) {

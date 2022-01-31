@@ -50,7 +50,7 @@ function request (spid, pkiCert) {
 			}),
 			issuerNameHash: new asn1.OctetString({ valueHex: nameHash({ uid: pkiCert.ipid }) }),
 			issuerKeyHash: new asn1.OctetString({ valueHex: pkiCert.authorityKeyIdentifier.valueBlock.valueHex }),
-			serialNumber: new asn1.Integer({ valueHex: pkiCert.serial.valueBlock.valueHex })
+			serialNumber: new asn1.Integer({ valueHex: pkiCert.serialNumber.valueBlock.valueHex })
 		})
 	})]
 

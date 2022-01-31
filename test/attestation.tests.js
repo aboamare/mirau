@@ -1,6 +1,7 @@
 import chai from 'chai'
 import chaiAsPromised from 'chai-as-promised'
 import { MCPCertificate } from '../src/certificate.js'
+import { Options } from '../src/options.js'
 import Errors from '../src/errors.js'
 import { Attestation } from '../src/attestations.js'
 
@@ -28,8 +29,11 @@ const subject = {
 }
 
 describe('Attestations', function () {
-  before(async () => {
+  let validationOptions
+
+  before(async function () {
     await MCPCertificate.initialize()
+    validationOptions = new Options({spid: 'urn:mrn:mcp:id:aboamare:test:sp'})
   })
 
   it('Create attestation', async function () {
@@ -39,16 +43,19 @@ describe('Attestations', function () {
     chai.expect(attn.someRandomClaim).to.be.undefined
   })
 
-  it('Accept attestation when allowing unknown issuer', async function () {
+  it('Do not accept attestation without trust in issuer', async function () {
     const jwt = await (new Attestation(issuer, subject)).asJWT()
-    const attn = await Attestation.fromJWT(jwt, {allowUnknownMir: true})
+    const attnPromise = Attestation.fromJWT(jwt, validationOptions)
+    attnPromise.should.be.rejectedWith(CertificateError)
+  })
+
+  it('Accept attestation when allowing unknown issuer', async function () {
+    validationOptions.allowUnknownMir = true
+    const jwt = await (new Attestation(issuer, subject)).asJWT()
+    const attn = await Attestation.fromJWT(jwt, validationOptions)
+    validationOptions.allowUnknownMir = false
     attn.mirOk.should.be.true
     attn.mirEndorsed.should.be.false
   })
 
-  it('Do not accept attestation without trust in issuer', async function () {
-    const jwt = await (new Attestation(issuer, subject)).asJWT()
-    const attnPromise = Attestation.fromJWT(jwt)
-    attnPromise.should.be.rejectedWith(CertificateError)
-  })
 })

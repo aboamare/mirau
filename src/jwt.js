@@ -3,6 +3,7 @@ import * as jose from 'jose'
 import pki from 'pkijs'
 
 import { MCPCertificate } from './certificate.js'
+import { Options } from './options.js'
 import Errors from './errors.js'
 
 const { JwtError } = Errors
@@ -11,17 +12,6 @@ export class JWT extends Object {
   constructor (props) {
     super()
     Object.assign(this, props)
-  }
-
-  static VerificationOptions = {
-    algorithms: ['ES384', 'ES256'],
-    clockTolerance: '30 seconds',
-    maxTokenAge: '5 minutes'
-  }
-
-  static allowOldTokens () {
-    delete this.VerificationOptions.clockTolerance
-    delete this.VerificationOptions.maxTokenAge
   }
 
   static async validate (token, expectations = {}, options = {}) {
@@ -60,8 +50,8 @@ export class JWT extends Object {
         throw JwtError.InvalidPublicKey(token)
       }
 
-      const verificationOptions = Object.assign(this.VerificationOptions, expectations, options)
-      const { payload, protectedHeader } = await jose.jwtVerify(token, publicKey, verificationOptions)
+      const verificationOptions = options instanceof Options ? options : new Options(options)
+      const { payload, protectedHeader } = await jose.jwtVerify(token, publicKey, verificationOptions.jwt)
   
       for (const exp in expectations) {
         if (unverifiedProtectedHeader[exp] !== expectations[exp]) {

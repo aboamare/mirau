@@ -8,6 +8,7 @@ chai.use(chaiAsPromised)
 const expect = chai.expect
 
 import { MCPCertificate } from '../src/certificate.js'
+import { Options } from '../src/options.js'
 import Errors from '../src/errors.js'
 const { CertificateError } = Errors
 
@@ -81,8 +82,11 @@ dHAwCgYIKoZIzj0EAwMDaAAwZQIwSlpM5vc0WHNDp1DT6mwvVShPun1tPprlpwgv
 
 describe('Certificates', function () {
 
+  let validationOptions
+
   before(async function () {
     await MCPCertificate.initialize()
+    validationOptions = new Options({spid: 'urn:mrn:mcp:id:aboamare:test:sp'})
   })
 
   it('import chain from PEM', async function () {
@@ -116,18 +120,18 @@ describe('Certificates', function () {
 
   it('validate chain without trust in anchor', async function () {
     const chain = await MCPCertificate.fromPEM(pemChain, true)
-    const validate = MCPCertificate.validate(chain, 'urn:mrn:mcp:id:aboamare:test:aboamare-spirit', {spid: 'urn:mrn:mcp:id:aboamare:test:sp'})
+    const validate = MCPCertificate.validate(chain, 'urn:mrn:mcp:id:aboamare:test:aboamare-spirit', validationOptions)
     validate.should.be.rejectedWith(CertificateError)
   })
 
   it('validate chain with trust in anchor', async function () {
     const chain = await MCPCertificate.fromPEM(pemChain, true)
-    MCPCertificate.trust(chain[2])
-    let validate = MCPCertificate.validate(chain, 'urn:mrn:mcp:id:aboamare:test:aboamare-spirit', {spid: 'urn:mrn:mcp:id:aboamare:test:sp'})
+    validationOptions.trust(chain[2])
+    let validate = MCPCertificate.validate(chain, 'urn:mrn:mcp:id:aboamare:test:aboamare-spirit', validationOptions)
     validate.should.not.be.rejectedWith(CertificateError)
     
-    MCPCertificate.noLongerTrust(chain[2])
-    validate = MCPCertificate.validate(chain, 'urn:mrn:mcp:id:aboamare:test:aboamare-spirit', {spid: 'urn:mrn:mcp:id:aboamare:test:sp'})
+    validationOptions.noLongerTrust(chain[2])
+    validate = MCPCertificate.validate(chain, 'urn:mrn:mcp:id:aboamare:test:aboamare-spirit', validationOptions)
     validate.should.be.rejectedWith(CertificateError)
   })
 

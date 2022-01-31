@@ -2,10 +2,10 @@ import pki  from 'pkijs'
 import asn1 from 'asn1js'
 import base64 from 'base64-js'
 
-import cache from './cache.js'
 import { MRN } from  './mrn.js'
 import { OID }  from './mcp-oids.js'
 import OCSP from './ocsp.js'
+import { Options } from './options.js'
 import Errors from './errors.js'
 
 const { CertificateError } = Errors
@@ -115,10 +115,6 @@ export class MCPCertificate extends pki.Certificate {
     }
   }
 
-  get _cache () {
-    return this.constructor._cache
-  }
-
   get dnString () {
     Object.entries(this.dn).map(entry => `${entry[0]}=${entry[1]}`).join(',')
   }
@@ -139,19 +135,20 @@ export class MCPCertificate extends pki.Certificate {
     return this.constructor.validationOptions
   }
 
-  cacheAs (status = 'good', kind) {
-    if (! this._cache) {
+  cacheAs (cache, status = 'good', kind) {
+    if (!cache) {
       return
     }
     if (kind === undefined && status === 'trusted') {
       kind = 'trusted'
-    }
-    if (kind === undefined && this.ca) {
+    } else if (kind === undefined && this.ca) {
       kind = 'mir'
+    } else {
+      kind = 'certificate'
     }
-    const expireIn = this.validationOptions.cache.expireIn[kind]
+    const expireIn = cache.expireIn[kind]
     const expires = typeof expireIn === 'function' ? expireIn() : undefined
-    this._cache.set(this.fingerprint, status, expires)
+    cache.set(this.fingerprint, status, expires)
   }
 
   get jwk () {
@@ -173,8 +170,8 @@ export class MCPCertificate extends pki.Certificate {
   async getStatus (options) {
     let result = undefined
     // check cache
-    if (this._cache) {
-      result = this._cache.get(this.fingerprint)
+    if (options.cache) {
+      result = options.cache.get(this.fingerprint)
       if (result) {
         return result
       }
@@ -187,8 +184,8 @@ export class MCPCertificate extends pki.Certificate {
     }
 
     // if in list of trusted certs mark as trusted and cache
-    if (options.trusted.has(this.fingerprint)) {
-      this.cacheAs('trusted')
+    if (options.cache && options.trusted.has(this.fingerprint)) {
+      this.cacheAs(options.cache, 'trusted')
       return 'trusted'
     }
 
@@ -267,60 +264,12 @@ export class MCPCertificate extends pki.Certificate {
     return certificates.length === 1 && asArray === false ? certificates[0] : certificates
   }
 
-  static _initCache() {
-    const cacheOptions = this.validationOptions.cache
-    const clsName = cacheOptions.type || 'Cache'
-    this._cache = new cache[clsName]()
-    if (!cacheOptions.expireIn) {
-      const expireIn = {}
-      for (const kind in cacheOptions) {
-        if (kind === 'type') {
-          continue
-        } else if (typeof cacheOptions[kind] === 'string') {
-          expireIn[kind] = this._cache.expireIn(cacheOptions[kind])
-        } else if (typeof cacheOptions[kind] === 'function') {
-          expireIn[kind] = cacheOptions[kind]
-        }
-      }
-      cacheOptions.expireIn = expireIn
-    }
-  }
-
-  static async initialize (options = {spid: 'urn:mrn:mcp:id:aboamare:test:sp'}) {
-    Object.assign(this.validationOptions, options)
-
-    if (this.validationOptions.cache) {
-      this._initCache()
-    }
-
+  static async initialize () {
     await initCrypto()
   }
 
-  static validationOptions = {
-    trusted: new Set([]),
-    ogtUrl: '',
-    cache: {
-      certificate: '12 hours',
-      mir: '48 hours',
-      trusted: '48 hours'
-    },
-    trustAttested: true
-  }
-
-  static trust (certificate) {
-    this.validationOptions.trusted.add(certificate.fingerprint)
-  }
-
-  static noLongerTrust (certificate) {
-    try {
-      this.validationOptions.trusted.delete(certificate.fingerprint)
-    } catch (err) {
-      console.info(err)
-    }
-  }
-
   static async validate (chain, uid, options = {}) {
-    const validationOptions = Object.assign({}, this.validationOptions, options)
+    const validationOptions = options instanceof Options ? options : new Options(options)
     if (! (Array.isArray(chain) && chain.length > 0)) {
       throw CertificateError.NoCertificate(chain)
     }
