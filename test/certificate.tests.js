@@ -91,7 +91,7 @@ describe('Certificates', function () {
     chain.should.have.lengthOf(3)
     chain.should.all.be.instanceOf(MCPCertificate)
 
-    const cert = chain[0]
+    let cert = chain[0]
     cert.should.have.property('uid')
     cert.uid.should.equal('urn:mrn:mcp:id:aboamare:test:aboamare-spirit')
     cert.should.have.property('ipid')
@@ -102,6 +102,16 @@ describe('Certificates', function () {
     cert.mmsi.should.be.a('string')
     cert.homePort.should.be.a('string')
     expect(cert.serial, 'cert should have serial').to.exist
+
+    cert = chain[1]
+    cert.should.have.property('uid')
+    cert.uid.should.equal('urn:mrn:mcp:id:aboamare:test')
+    cert.should.have.property('ipid')
+    cert.ipid.should.equal('urn:mrn:mcp:id:aboamare')
+    cert.validTo.should.be.instanceOf(Date)
+    cert.x5uUrl.should.be.a('string')
+    cert.matpUrl.should.be.a('string')
+  
   })
 
   it('validate chain without trust in anchor', async function () {

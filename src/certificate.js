@@ -103,6 +103,16 @@ export class MCPCertificate extends pki.Certificate {
         }
       })
     }
+
+    const extnSubjectInfoAccess = (this.extensions || []).find(extn => extn.extnID === OID.subjectInfoAccess)
+    if (extnSubjectInfoAccess) {
+      extnSubjectInfoAccess.parsedValue.accessDescriptions.forEach(des => {
+        const accessMethod = OID[_parseOID(des.accessMethod)]
+        if (accessMethod) {
+          this[`${accessMethod}Url`] = des.accessLocation.value
+        }
+      })
+    }
   }
 
   get _cache () {
