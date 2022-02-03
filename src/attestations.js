@@ -30,7 +30,7 @@ export class Attestation {
     if (!privateKey) {
       throw Error('Cannot create attestation without private key')
     }
-    const alg = privateKey.alg || this.issuer.signatureAlgorithm || 'ES384'
+    const alg = privateKey.alg || this.issuer.algorithm || 'ES384'
     if (privateKey.constructor.name === 'Object') {
       privateKey = await jose.importJWK(privateKey, alg)
     }
