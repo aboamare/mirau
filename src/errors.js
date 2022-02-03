@@ -2,7 +2,6 @@ const Codes = {
   JwtError: {
     TokenError: token => `Error with provided JSON Web Token: ${token.slice(0,20)}...`,
     InvalidNonce: token => `Token has no matching nonce: ${token.nonce}`,
-    InvalidX5U: x5u => `Token has an x5u that is not valid: ${x5u}`,
     NoSubject: token => `Token does not have a 'sub' property in the protected header: ${token.slice(0,20)}...`,
     NoCertificate: token => `Token does not have or refer to an MCP Certificate: ${token.slice(0,20)}...`,
     InvalidPublicKey: token => `Token refers to, or contains, a public key that cannot be read: ${token.slice(0,20)}...`,
@@ -12,6 +11,7 @@ const Codes = {
   },
   CertificateError: {
     InvalidCertificate: cert => `Certificate could not be validated: ${cert.fingerprint}`,
+    InvalidX5U: x5u => `x5u URL is not valid: ${x5u}`,
     CouldNotParsePEM: pem => `PEM encoded certificate could not be parsed: (${pem.slice(0, 20)}...)`,
     Expired: cert => `Certificate expired at ${cert.validTo}`,
     IssuerNotCA: cert => `Certificate for ${cert.uid} is not intended to be used as CA certificate`,
@@ -29,6 +29,9 @@ const Codes = {
     UnknownStatus: cert => `Status of certificate for ${cert.uid} (${cert.fingerprint}) could not be established`
   },
   EntityError: {
+    UidNotMrn: uid => `Entity UID is not a MRN: ${uid}`,
+    NoCertificateFingerprint: entity => `Entity does not have certificate fingerprint: ${entity.uid}`,
+    NoX5t256: entity => `Entity does not have x5t256 certificate fingerprint: ${entity.uid}`
   }
 }
 

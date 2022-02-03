@@ -26,6 +26,7 @@ const issuer = {
 
 const subject = {
   uid: "urn:mrn:mcp:id:aboamare:test",
+  x5uUrl: 'https://raw.githubusercontent.com/aboamare/mirau/main/test/data/aboamare-test.x5u'
 }
 
 describe('Attestations', function () {
@@ -33,6 +34,8 @@ describe('Attestations', function () {
 
   before(async function () {
     await MCPCertificate.initialize()
+    const chain = await MCPCertificate.fetch(subject.x5uUrl)
+    subject.x5t256 = chain[0].x5t256
     validationOptions = new Options({spid: 'urn:mrn:mcp:id:aboamare:test:sp'})
   })
 
@@ -41,6 +44,9 @@ describe('Attestations', function () {
     attn.mirOk.should.be.true
     attn.mirEndorsed.should.be.false
     chai.expect(attn.someRandomClaim).to.be.undefined
+    attn.asserts(subject, 'mirOk').should.be.true
+    attn.asserts(subject, 'mirEndorsed').should.be.false
+    attn.asserts({uid: 'urn:mrn:mcp:id:aboamare:test:sp'}, 'mirOk').should.be.false
   })
 
   it('Do not accept attestation without trust in issuer', async function () {

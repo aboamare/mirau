@@ -1,4 +1,3 @@
-import fetch from 'node-fetch'
 import * as jose from 'jose'
 import pki from 'pkijs'
 
@@ -18,22 +17,7 @@ export class JWT extends Object {
     const unverifiedProtectedHeader = jose.decodeProtectedHeader(token)
     const chain = []
     if (unverifiedProtectedHeader.x5u) {
-      try {
-        const url = new URL(unverifiedProtectedHeader.x5u)
-        const response = await fetch(url.toString())
-        if (response.ok) {
-          const pem = await response.text()
-          chain.push(... await MCPCertificate.fromPEM(pem, true))
-        } else {
-          throw JwtError.InvalidX5U(unverifiedProtectedHeader.x5u)
-        }
-      } catch (err) {
-        if (err instanceof TypeError) {
-          throw JwtError.InvalidX5U(unverifiedProtectedHeader.x5u)
-        } else {
-          throw err
-        }
-      }
+      chain.push(... await MCPCertificate.fetch(unverifiedProtectedHeader.x5u, true))
     }
     //TODO: check for x5c
 

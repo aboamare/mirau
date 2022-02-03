@@ -114,8 +114,25 @@ describe('Certificates', function () {
     cert.ipid.should.equal('urn:mrn:mcp:id:aboamare')
     cert.validTo.should.be.instanceOf(Date)
     cert.x5uUrl.should.be.a('string')
-    cert.matpUrl.should.be.a('string')
-  
+    cert.matpUrl.should.be.a('string')  
+  })
+
+  it('fetch chain', async function () {
+    const chain = await MCPCertificate.fetch('https://raw.githubusercontent.com/aboamare/mirau/main/test/data/aboamare-spirit.x5u')
+    chain.should.have.lengthOf(3)
+    chain[0].uid.should.equal('urn:mrn:mcp:id:aboamare:test:aboamare-spirit')
+    chain[1].uid.should.equal('urn:mrn:mcp:id:aboamare:test')
+  })
+
+  it('fetch single cert', async function () {
+    const cert = await MCPCertificate.fetch('https://raw.githubusercontent.com/aboamare/mirau/main/test/data/aboamare.x5u')
+    cert.should.have.property('uid')
+    cert.uid.should.equal('urn:mrn:mcp:id:aboamare')
+  })
+
+  it('fetch with invalid x5u', async function () {
+    const fetch = MCPCertificate.fetch('https://raw.githubusercontent.com/aboamare/mirau/main/test/data/foobar.x5u')
+    fetch.should.be.rejectedWith(CertificateError)
   })
 
   it('validate chain without trust in anchor', async function () {

@@ -3,12 +3,22 @@ import * as jose from 'jose'
 import Errors from './errors.js'
 import { JWT } from './jwt.js'
 import { MCPCertificate } from './certificate.js'
+import { MRN } from './mrn.js'
 import { Options } from './options.js'
 
 const { EntityError, CertificateError} = Errors
 
 export class Attestation {
   constructor (issuer, subject, claims = { mirOk: true }) {
+    if (! MRN.test(issuer.uid)) {
+      throw EntityError.UidNotMrn(issuer.uid)
+    }
+    if (! MRN.test(subject.uid)) {
+      throw EntityError.UidNotMrn(subject.uid)
+    }
+    if (! subject.x5t256) {
+      throw EntityError.NoX5t256(subject)
+    }
     this.issuer = issuer
     this.subject = subject
     this._claims = claims
@@ -25,8 +35,10 @@ export class Attestation {
       privateKey = await jose.importJWK(privateKey, alg)
     }
     const claims = Object.assign({
-      iss: this.issuer.uid,
-      sub: this.subject.uid }, 
+        iss: this.issuer.uid,
+        sub: this.subject.uid,
+        subX5t256: this.subject.x5t256
+      },
       this._claims
     )
     const protectedHeader = {
@@ -42,6 +54,10 @@ export class Attestation {
     return jwt
   }
 
+  asserts (subject, claim) {
+    return this.subject === subject && this[claim] === true
+  }
+
   static RecognizedClaims = ['mirOk', 'mirEndorsed']
 
   static async fromJWT (token, options = {}) {
@@ -50,6 +66,10 @@ export class Attestation {
 
     await MCPCertificate.validate(jwt.chain, jwt.iss, validationOptions)
   
+    const subject = {uid: jwt.sub}
+    if (jwt.subX5t256) {
+      subject.x5t256 = jwt.subX5t256
+    }
     const claims = this.RecognizedClaims.reduce((result, claim) => {
       if (jwt[claim] !== undefined) {
         result[claim] = jwt[claim]
@@ -57,9 +77,8 @@ export class Attestation {
       return result
     }, {})
 
-    return new this(jwt.chain[0], jwt.sub, claims)
-
-  }  
+    return new this(jwt.chain[0], subject, claims)
+  }
 }
 
 Attestation.RecognizedClaims.forEach(claim => {

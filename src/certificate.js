@@ -1,7 +1,8 @@
 import pki  from 'pkijs' 
 import asn1 from 'asn1js'
 import base64 from 'base64-js'
-
+import { base64url } from 'jose'
+import fetch from 'isomorphic-unfetch'
 import { MRN } from  './mrn.js'
 import { OID }  from './mcp-oids.js'
 import OCSP from './ocsp.js'
@@ -29,10 +30,8 @@ function _parseOID (str) {
   return str
 }
 
-function bufToHex(buffer) { // buffer is an ArrayBuffer
-  return [...new Uint8Array(buffer)]
-      .map(x => x.toString(16).padStart(2, '0'))
-      .join('');
+function bytesToHexCodes (arrayBuf) {
+  return [...new Uint8Array(arrayBuf)].map(byte => byte.toString(16).padStart(2, '0').toUpperCase()).join(':')
 }
 
 export async function initCrypto() {
@@ -120,7 +119,7 @@ export class MCPCertificate extends pki.Certificate {
   }
 
   get serial () {
-    return bufToHex(this.serialNumber.valueBlock.valueHex)
+    return this.bufToHex(this.serialNumber.valueBlock.valueHex)
   }
 
   get validFrom () {
@@ -135,6 +134,12 @@ export class MCPCertificate extends pki.Certificate {
     return this.constructor.validationOptions
   }
 
+  bufToHex (buffer) { // buffer is an ArrayBuffer
+    return [...new Uint8Array(buffer)]
+      .map(x => x.toString(16).padStart(2, '0'))
+      .join('')
+  }
+  
   cacheAs (cache, status = 'good', kind) {
     if (!cache) {
       return
@@ -148,25 +153,40 @@ export class MCPCertificate extends pki.Certificate {
     }
     const expireIn = cache.expireIn[kind]
     const expires = typeof expireIn === 'function' ? expireIn() : undefined
-    cache.set(this.fingerprint, status, expires)
+    cache.set(this.x5t256, status, expires)
   }
 
   get jwk () {
     return this.subjectPublicKeyInfo.toJSON()
   }
 
-  async updateFingerprint (hashAlgorithm = 'SHA-1') {
-    const subtle = pki.getEngine().subtle
+  async getFingerprint (hashAlgorithm = 'SHA-1') {
     try {
-      const bytes = await subtle.digest(hashAlgorithm, this.toSchema(true).toBER())
-      this.fingerprint = [...new Uint8Array(bytes)].map(byte => byte.toString(16).padStart(2, '0').toUpperCase()).join(':')
+      const subtle = pki.getEngine().subtle
+      return await subtle.digest(hashAlgorithm, this.toSchema(true).toBER())
     } catch (err) {
       console.error(err)
       throw err
     }
-    return this.fingerprint
   }
 
+  async updateFingerprint () {
+    this._fingerprint = await this.getFingerprint('SHA-1')
+    this._fingerprint256 = await this.getFingerprint('SHA-256')
+  }
+
+  get fingerprint () {
+    return bytesToHexCodes(this._fingerprint)
+  }
+
+  get fingerprint256 () {
+    return bytesToHexCodes(this._fingerprint256)
+  }
+
+  get x5t256 () {
+    return base64url.encode(this._fingerprint256)
+  }
+  
   async getStatus (options) {
     let result = undefined
     // check cache
@@ -184,7 +204,7 @@ export class MCPCertificate extends pki.Certificate {
     }
 
     // if in list of trusted certs mark as trusted and cache
-    if (options.cache && options.trusted.has(this.fingerprint)) {
+    if (options.cache && options.trusted.has(this.x5t256)) {
       this.cacheAs(options.cache, 'trusted')
       return 'trusted'
     }
@@ -245,6 +265,25 @@ export class MCPCertificate extends pki.Certificate {
       }
 
       throw CertificateError.NotTrusted(this)
+    }
+  }
+
+  static async fetch (x5uUrl, asArray = false) {
+    try {
+      const url = new URL(x5uUrl)
+      const response = await fetch(url.toString())
+      if (response.ok) {
+        const pem = await response.text()
+        return await MCPCertificate.fromPEM(pem, asArray)
+      } else {
+        throw CertificateError.InvalidX5U(x5uUrl)
+      }
+    } catch (err) {
+      if (err instanceof TypeError) {
+        throw CertificateError.InvalidX5U(x5uUrl)
+      } else {
+        throw err
+      }
     }
   }
 

@@ -9,8 +9,13 @@ import Errors from './errors.js'
 
 const { CertificateError } = Errors
 
-function nameHash (dn = {uid: 'urn:mrn:mcp:id:aboamare:test'}) {
+function bufToHex (buffer) { // buffer is an ArrayBuffer
+  return [...new Uint8Array(buffer)]
+    .map(x => x.toString(16).padStart(2, '0'))
+    .join('')
+}
 
+function nameHash (dn = {uid: 'urn:mrn:mcp:id:aboamare:test'}) {
   const rdn = new pki.RelativeDistinguishedNames()
   rdn.typesAndValues.push(...Object.keys(dn).map(attr => {
     let asn1Type = asn1.Utf8String
@@ -61,7 +66,7 @@ function request (spid, pkiCert) {
 			extnValue: nonce
 		})
 	]
-  req.nonce = Buffer.from(nonce).toString('hex')
+  req.nonce = bufToHex(nonce)
 
   return req
 }
@@ -114,12 +119,12 @@ async function response (fetchResponse) {
 
     ocspBasicResp.tbsResponseData.responseExtensions.forEach(extn => {
       if (extn.extnID === OID.nonce) {
-        res.nonce = Buffer.from(extn.extnValue.valueBlock.valueHex).toString('hex')
+        res.nonce = bufToHex(extn.extnValue.valueBlock.valueHex)
       }
     })
 
     ocspBasicResp.tbsResponseData.responses.forEach(singleResponse => {
-      const serial = Buffer.from(singleResponse.certID.serialNumber.valueBlock.valueHex).toString('hex')
+      const serial = bufToHex(singleResponse.certID.serialNumber.valueBlock.valueHex)
       let status = undefined
       switch(singleResponse.certStatus.idBlock.tagNumber)
       {
