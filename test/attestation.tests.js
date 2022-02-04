@@ -21,12 +21,12 @@ const issuer = {
     "crv":"P-384",
     "d":"Xi7GhreXjZAwo5kCjeGFbCFHZ5y7vwwZ4TmaToinovoUbVt5Ee640dzX2mAxYTFp"
   },
-  x5uUrl: 'https://raw.githubusercontent.com/aboamare/mirau/main/test/data/aboamare.x5u'
+  x5u: 'https://raw.githubusercontent.com/aboamare/mirau/main/test/data/aboamare.x5u'
 }
 
 const subject = {
   uid: "urn:mrn:mcp:id:aboamare:test",
-  x5uUrl: 'https://raw.githubusercontent.com/aboamare/mirau/main/test/data/aboamare-test.x5u'
+  x5u: 'https://raw.githubusercontent.com/aboamare/mirau/main/test/data/aboamare-test.x5u'
 }
 
 describe('Attestations', function () {
@@ -34,7 +34,7 @@ describe('Attestations', function () {
 
   before(async function () {
     await MCPCertificate.initialize()
-    const chain = await MCPCertificate.fetch(subject.x5uUrl)
+    const chain = await MCPCertificate.fetch(subject.x5u)
     subject.x5t256 = chain[0].x5t256
     validationOptions = new Options({spid: 'urn:mrn:mcp:id:aboamare:test:sp'})
   })

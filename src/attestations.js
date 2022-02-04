@@ -13,6 +13,11 @@ export class Attestation {
     if (! MRN.test(issuer.uid)) {
       throw EntityError.UidNotMrn(issuer.uid)
     }
+    try {
+      new URL(issuer.x5u) 
+    } catch (err) {
+      throw EntityError.InvalidX5u(issuer)
+    }
     if (! MRN.test(subject.uid)) {
       throw EntityError.UidNotMrn(subject.uid)
     }
@@ -24,7 +29,7 @@ export class Attestation {
     this._claims = claims
   }
 
-  async asJWT (options = { privateKey: undefined, expiration: '30d' }) {
+  async asJWT (options = { privateKey: undefined, expiration: '7d' }) {
     options = Object.assign({expiration: '30d'}, options)
     let privateKey = options.privateKey || this.issuer.privateKey
     if (!privateKey) {
@@ -43,12 +48,12 @@ export class Attestation {
     )
     const protectedHeader = {
       alg,
-      x5u: this.issuer.x5uUrl
+      x5u: this.issuer.x5u
     }
     const jwt = await new jose.SignJWT(claims)
     .setProtectedHeader(protectedHeader)
     .setIssuedAt()
-    .setExpirationTime(options.expiration)
+    .setExpirationTime(options.expiration || '7d')
     .sign(privateKey)
 
     return jwt

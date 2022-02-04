@@ -9,9 +9,10 @@ import { JWT } from './jwt.js'
 import { Attestation } from './attestations.js'
 import { Options } from './options.js'
 import Errors from './errors.js'
+import fetch from './fetch.js'
 
 async function initialize () {
   await MCPCertificate.initialize()
 }
 
-export { Attestation, Errors, JWT, initialize, MCPCertificate, MCPEntity, MRN, Options, OID, pki, asn1 }
+export { Attestation, Errors, JWT, fetch, initialize, MCPCertificate, MCPEntity, MRN, Options, OID, pki, asn1 }

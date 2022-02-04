@@ -29,9 +29,12 @@ const Codes = {
     UnknownStatus: cert => `Status of certificate for ${cert.uid} (${cert.fingerprint}) could not be established`
   },
   EntityError: {
+    InvalidEntity: entity => `Entity ${entity.uid} does not have necessary properties or has invalid property values`,
+    InvalidMatp: entity => `Entity ${entity.uid} does not have valid matp url: ${entity.matp}`,
+    InvalidX5u: entity => `Entity ${entity.uid} does not have valid x5u url: ${entity.x5u}`,
     UidNotMrn: uid => `Entity UID is not a MRN: ${uid}`,
-    NoCertificateFingerprint: entity => `Entity does not have certificate fingerprint: ${entity.uid}`,
-    NoX5t256: entity => `Entity does not have x5t256 certificate fingerprint: ${entity.uid}`
+    NoCertificateFingerprint: entity => `Entity ${entity.uid} does not have certificate fingerprint`,
+    NoX5t256: entity => `Entity ${entity.uid} does not have x5t256 certificate fingerprint`
   }
 }
 

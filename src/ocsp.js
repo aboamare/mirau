@@ -1,11 +1,11 @@
 import crypto from 'crypto'
-import fetch from 'isomorphic-unfetch'
 
 import pki from 'pkijs'
 import asn1 from 'asn1js'
 
 import { OID }  from './mcp-oids.js'
 import Errors from './errors.js'
+import fetch from './fetch.js'
 
 const { CertificateError } = Errors
 

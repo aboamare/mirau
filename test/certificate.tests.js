@@ -101,7 +101,7 @@ describe('Certificates', function () {
     cert.should.have.property('ipid')
     cert.ipid.should.equal('urn:mrn:mcp:id:aboamare:test')
     cert.validTo.should.be.instanceOf(Date)
-    cert.x5uUrl.should.be.a('string')
+    cert.x5u.should.be.a('string')
     cert.callSign.should.be.a('string')
     cert.mmsi.should.be.a('string')
     cert.homePort.should.be.a('string')
@@ -113,8 +113,8 @@ describe('Certificates', function () {
     cert.should.have.property('ipid')
     cert.ipid.should.equal('urn:mrn:mcp:id:aboamare')
     cert.validTo.should.be.instanceOf(Date)
-    cert.x5uUrl.should.be.a('string')
-    cert.matpUrl.should.be.a('string')  
+    cert.x5u.should.be.a('string')
+    cert.matp.should.be.a('string')  
   })
 
   it('fetch chain', async function () {

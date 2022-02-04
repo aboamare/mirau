@@ -2,7 +2,7 @@ import pki  from 'pkijs'
 import asn1 from 'asn1js'
 import base64 from 'base64-js'
 import { base64url } from 'jose'
-import fetch from 'isomorphic-unfetch'
+import fetch from './fetch.js'
 import { MRN } from  './mrn.js'
 import { OID }  from './mcp-oids.js'
 import OCSP from './ocsp.js'
@@ -98,7 +98,7 @@ export class MCPCertificate extends pki.Certificate {
       extnAuthInfoAccess.parsedValue.accessDescriptions.forEach(des => {
         const accessMethod = OID[_parseOID(des.accessMethod)]
         if (accessMethod) {
-          this[`${accessMethod}Url`] = des.accessLocation.value
+          this[accessMethod] = des.accessLocation.value
         }
       })
     }
@@ -108,7 +108,7 @@ export class MCPCertificate extends pki.Certificate {
       extnSubjectInfoAccess.parsedValue.accessDescriptions.forEach(des => {
         const accessMethod = OID[_parseOID(des.accessMethod)]
         if (accessMethod) {
-          this[`${accessMethod}Url`] = des.accessLocation.value
+          this[accessMethod] = des.accessLocation.value
         }
       })
     }

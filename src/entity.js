@@ -1,5 +1,5 @@
 import Errors from './errors.js'
-import { MRN } from './mrn.js'
+import { MRN } from './mrn.js'
 import { JWT } from './jwt.js'
 import { MCPCertificate } from './certificate.js'
 
@@ -18,7 +18,7 @@ export class MCPEntity extends Object {
   static RecognizedProperties = [
     'uid',
     'ipid',
-    'x5uUrl',
+    'x5u',
     'ocsp',
     'matp',
     'email',
