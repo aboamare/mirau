@@ -34,7 +34,7 @@ function nameHash (dn = {uid: 'urn:mrn:mcp:id:aboamare:test'}) {
 function request (spid, pkiCert) {
   const req = new pki.OCSPRequest()
 
-  req.url = pkiCert.ocspUrl
+  req.url = pkiCert.ocsp
 
   req.tbsRequest.requestorName = new pki.GeneralName({
 		type: 4,
@@ -53,7 +53,7 @@ function request (spid, pkiCert) {
 			hashAlgorithm: new pki.AlgorithmIdentifier({
 				algorithmId: OID.sha1
 			}),
-			issuerNameHash: new asn1.OctetString({ valueHex: nameHash({ uid: pkiCert.ipid }) }),
+			issuerNameHash: new asn1.OctetString({ valueHex: nameHash(pkiCert.dn) }),
 			issuerKeyHash: new asn1.OctetString({ valueHex: pkiCert.authorityKeyIdentifier.valueBlock.valueHex }),
 			serialNumber: new asn1.Integer({ valueHex: pkiCert.serialNumber.valueBlock.valueHex })
 		})
@@ -149,13 +149,7 @@ async function response (fetchResponse) {
 export async function getStatus(spid, certificate) {
   try {
     const ocspReq = request(spid, certificate)
-
-    const url = new URL(ocspReq.url)
-    if (spid === 'urn:mrn:mcp:id:aboamare:test:sp') {
-      url.host = 'localhost:3001'
-      url.protocol = 'http'
-    }
-
+    const url = new URL(ocspReq.url).toString()
     const resp = await fetch(url, {
       method: 'POST',
       headers: {
@@ -170,7 +164,7 @@ export async function getStatus(spid, certificate) {
         throw CertificateError.OCSPError(ocspReq)
       }
       //TODO: ocspBasicResp.verify({ trustedCerts: trustedCertificates })
-      return ocspResponse.statuses[certificate.serialNumber.toLowerCase()]
+      return ocspResponse.statuses[certificate.serial.toLowerCase()]
     } else {
       return undefined
     }
