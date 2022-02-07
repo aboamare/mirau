@@ -199,7 +199,7 @@ export class MCPCertificate extends pki.Certificate {
 
     // try to get OCSP result
     result = await OCSP.getStatus(options.spid, this)
-    if (result) {
+    if (result && result.revoked) {
       return result
     }
 
@@ -207,6 +207,15 @@ export class MCPCertificate extends pki.Certificate {
     if (options.cache && options.trusted.has(this.x5t256)) {
       this.cacheAs(options.cache, 'trusted')
       return 'trusted'
+    }
+
+    // if this cert is 'good' (not revoked) and represents the issuer of the service provider it could be trusted
+    if (result && options.spid && options.trustOwnIssuer === true) {
+      const mrn = new MRN(options.spid)
+      if (mrn.issuedBy(this.uid)) {
+        this.cacheAs(options.cache, 'trusted')
+        return 'trusted'
+      }
     }
 
     // if applicable get attestations
