@@ -63,6 +63,18 @@ export class Attestation {
     return this.subject === subject && this[claim] === true
   }
 
+  assertsOneOf (subject, claims = []) {
+    if (this.subject !== subject) {
+      return false
+    }
+    for (const claim of claims) {
+      if (this[claim] === true) {
+        return true
+      }
+    }
+    return false
+  }
+
   static RecognizedClaims = ['mirOk', 'mirEndorsed']
 
   static async fromJWT (token, options = {}) {

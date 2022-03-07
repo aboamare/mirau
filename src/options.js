@@ -2,8 +2,7 @@ import cache from './cache.js'
 
 export class Options {
   static defaults = {
-    trusted: new Set([]),
-    ogtUrl: '',
+    trusted: new Map(),
     cache: {
       certificate: '12 hours',
       mir: '48 hours',
@@ -15,6 +14,8 @@ export class Options {
       clockTolerance: '30 seconds',
       maxTokenAge: '5 minutes'
     },
+    strict: true,
+    trustedAttestations: ['mirEndorsed', 'mirOk'],
     trustAttested: true
   }
 
@@ -52,8 +53,20 @@ export class Options {
     delete this.jwt.maxTokenAge
   }
 
+  isTrusted (x5t256OrUid) {
+    if (this.trusted.has(x5t256OrUid)) {
+      return true
+    }
+    for (const oid of this.trusted.values()) {
+      if (oid === x5t256OrUid) {
+        return true
+      }
+    }
+    return false
+  }
+
   trust (certificate) {
-    this.trusted.add(certificate.fingerprint)
+    this.trusted.set(certificate.fingerprint, certificate.uid)
   }
 
   noLongerTrust (certificate) {

@@ -8,6 +8,8 @@ import { OID }  from './mcp-oids.js'
 import OCSP from './ocsp.js'
 import { Options } from './options.js'
 import Errors from './errors.js'
+import { URLSearchParams } from 'url'
+import { Attestation } from './attestations.js'
 
 const { CertificateError } = Errors
 
@@ -191,7 +193,7 @@ export class MCPCertificate extends pki.Certificate {
     let result = undefined
     // check cache
     if (options.cache) {
-      result = options.cache.get(this.fingerprint)
+      result = options.cache.get(this.x5t256)
       if (result) {
         return result
       }
@@ -204,7 +206,7 @@ export class MCPCertificate extends pki.Certificate {
     }
 
     // if in list of trusted certs mark as trusted and cache
-    if (options.cache && options.trusted.has(this.x5t256)) {
+    if (options.cache && options.isTrusted(this.x5t256)) {
       this.cacheAs(options.cache, 'trusted')
       return 'trusted'
     }
@@ -218,14 +220,46 @@ export class MCPCertificate extends pki.Certificate {
       }
     }
 
-    // if applicable get attestations
-
     return result
   }
 
   async checkIssued(issuerCert) {
     // check that this cert was issued and signed by the given issuer
     return await this.verify(issuerCert)
+  }
+
+  async getAttestation (options) {
+    // get attestors for this certificate and try to get an attestation from an attestor that is already trusted
+    try {
+      let matpUrl = this.matp
+      let response = await fetch(matpUrl)
+      if (response.ok) {
+        const attestors = await response.json() // attestors is an Array of objects with a mrn and a matp
+        for (const mir of attestors) {
+          if (options.isTrusted(mir.mrn)) {
+            matpUrl = new URL(mir.matp)
+            if (matpUrl.protocol !== 'https') {
+              console.warn(`MATP url for ${mir.mrn} is not secure: ${mir.matp}`)
+              if (options.strict) {
+                continue
+              }
+            }
+            matpUrl.pathName = this.uid
+            matpUrl.search = (new URLSearchParams({x5t256: this.x5t256})).toString()
+            response = await fetch(matpUrl)
+            if (response.ok) {
+              const jwt = await response.json()
+              const attestation = await Attestation.fromJWT(jwt, options)
+              return attestation
+            }
+          }
+        }
+        return null
+      }
+    } catch (err) {
+      console.warn(err)
+      return null
+    }
   }
 
   async validate (uid, issuerCert, options) {
@@ -252,7 +286,7 @@ export class MCPCertificate extends pki.Certificate {
     }
     if (status === 'trusted') {
       return
-    } else if (!issuerCert && !(options.allowUnknownMir && this.ca && MRN.test(this.uid))) {
+    } else if (! (issuerCert || (this.ca && MRN.test(this.uid) && (options.allowUnknownMir || options.trustAttested )))) {
       throw CertificateError.UnknownStatus(this)
     }
 
@@ -270,7 +304,11 @@ export class MCPCertificate extends pki.Certificate {
         return
       }
       if (options.trustAttested) {
-        //TODO: do the OGT-2 dance
+        const attestation = await this.getAttestation(options)
+        if (attestation && attestation.assertsOneOf(this.uid, options.trustedAttestations)) {
+          this.cacheAs(options.cache, 'trusted', 'mir')
+          return
+        }
       }
 
       throw CertificateError.NotTrusted(this)
